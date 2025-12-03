@@ -4,9 +4,40 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { TaskPriority, TaskStatus } from '@prisma/client';
 
+interface TaskFilterInput {
+  status?: TaskStatus;
+  assigneeId?: number;
+  from?: string;
+  to?: string;
+}
+
 @Injectable()
 export class TasksService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private buildWhere(projectId: number, filters: TaskFilterInput) {
+    const where: any = { projectId };
+
+    if (filters.status) {
+      where.status = filters.status;
+    }
+
+    if (filters.assigneeId) {
+      where.assignees = { some: { userId: filters.assigneeId } };
+    }
+
+    if (filters.from || filters.to) {
+      where.AND = [] as any[];
+      if (filters.from) {
+        where.AND.push({ startDate: { gte: new Date(filters.from) } });
+      }
+      if (filters.to) {
+        where.AND.push({ endDate: { lte: new Date(filters.to) } });
+      }
+    }
+
+    return where;
+  }
 
   private async setAssignees(taskId: number, assigneeIds?: number[]) {
     if (!assigneeIds) return;
@@ -18,31 +49,12 @@ export class TasksService {
     }
   }
 
-  async findByProject(
-    projectId: number,
-    filters: {
-      status?: TaskStatus;
-      assigneeId?: number;
-      from?: string;
-      to?: string;
-    },
-  ) {
-    const where: any = { projectId };
-    if (filters.status) where.status = filters.status;
-    if (filters.assigneeId)
-      where.assignees = { some: { userId: filters.assigneeId } };
-    if (filters.from || filters.to) {
-      where.AND = [] as any[];
-      if (filters.from) {
-        where.AND.push({ startDate: { gte: new Date(filters.from) } });
-      }
-      if (filters.to) {
-        where.AND.push({ endDate: { lte: new Date(filters.to) } });
-      }
-    }
+  async findByProject(projectId: number, filters: TaskFilterInput = {}) {
+    const where = this.buildWhere(projectId, filters);
     return this.prisma.task.findMany({
       where,
       include: { assignees: { include: { user: true } } },
+      orderBy: { id: 'asc' },
     });
   }
 
@@ -98,10 +110,12 @@ export class TasksService {
     return this.prisma.task.delete({ where: { id } });
   }
 
-  async getGanttData(projectId: number) {
+  async getGanttData(projectId: number, filters: TaskFilterInput = {}) {
+    const where = this.buildWhere(projectId, filters);
     const tasks = await this.prisma.task.findMany({
-      where: { projectId },
+      where,
       include: { assignees: { include: { user: true } } },
+      orderBy: { id: 'asc' },
     });
     return tasks.map((task) => ({
       id: task.id,

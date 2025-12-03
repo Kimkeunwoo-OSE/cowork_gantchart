@@ -1,26 +1,25 @@
 import { useState } from 'react';
-import {
-  Box,
-  Button,
-  Grid,
-  TextField,
-  MenuItem,
-  Typography,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-} from '@mui/material';
+import { Box, Button, Grid, TextField, MenuItem, Typography, Snackbar, Alert } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { projectsApi } from '../api/projectsApi';
 import ProjectCard from '../components/projects/ProjectCard';
+import ProjectFormDialog from '../components/projects/ProjectFormDialog';
 import { ProjectFilters, ProjectPayload, ProjectStatus } from '../types/project';
 import { useNavigate } from 'react-router-dom';
 
+const defaultFilters: ProjectFilters = { status: undefined, keyword: '' };
+const defaultProjectPayload: ProjectPayload = {
+  name: '',
+  description: '',
+  status: 'ACTIVE',
+  startDate: null,
+  endDate: null,
+};
+
 const ProjectListPage = () => {
-  const [filters, setFilters] = useState<ProjectFilters>({ status: undefined, keyword: '' });
+  const [filters, setFilters] = useState<ProjectFilters>(defaultFilters);
   const [createOpen, setCreateOpen] = useState(false);
-  const [form, setForm] = useState<ProjectPayload>({ name: '', description: '', status: 'ACTIVE' });
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -33,10 +32,14 @@ const ProjectListPage = () => {
   });
 
   const createMutation = useMutation({
-    mutationFn: () => projectsApi.createProject(form),
+    mutationFn: (payload: ProjectPayload) => projectsApi.createProject(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       setCreateOpen(false);
+    },
+    onError: (err: any) => {
+      const message = err?.response?.data?.message || '프로젝트 생성에 실패했습니다.';
+      setError(Array.isArray(message) ? message.join(', ') : message);
     },
   });
 
@@ -48,7 +51,7 @@ const ProjectListPage = () => {
           새 프로젝트 추가
         </Button>
       </Box>
-      <Box display="flex" gap={2} mb={3}>
+      <Box display="flex" gap={2} mb={3} flexWrap="wrap">
         <TextField
           label="상태"
           select
@@ -79,47 +82,19 @@ const ProjectListPage = () => {
         ))}
       </Grid>
 
-      <Dialog open={createOpen} onClose={() => setCreateOpen(false)} fullWidth>
-        <DialogTitle>프로젝트 생성</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="이름"
-            fullWidth
-            margin="normal"
-            value={form.name}
-            onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-          />
-          <TextField
-            label="설명"
-            fullWidth
-            margin="normal"
-            multiline
-            rows={3}
-            value={form.description}
-            onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-          />
-          <TextField
-            label="상태"
-            select
-            fullWidth
-            margin="normal"
-            value={form.status}
-            onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value as ProjectStatus }))}
-          >
-            {(['ACTIVE', 'COMPLETED', 'ON_HOLD'] as ProjectStatus[]).map((s) => (
-              <MenuItem key={s} value={s}>
-                {s}
-              </MenuItem>
-            ))}
-          </TextField>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCreateOpen(false)}>취소</Button>
-          <Button onClick={() => createMutation.mutate()} variant="contained">
-            저장
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ProjectFormDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        initialData={defaultProjectPayload}
+        onSubmit={(payload) => createMutation.mutate(payload)}
+        isSubmitting={createMutation.isPending}
+      />
+
+      <Snackbar open={!!error} autoHideDuration={2500} onClose={() => setError(null)}>
+        <Alert severity="error" onClose={() => setError(null)} sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

@@ -37,13 +37,13 @@ const TaskFilterBar = ({
     },
   });
 
-  const { assigneeIds, status, dateRange } = filters;
+  const { assigneeIds, statuses, dateRange } = filters;
 
   const toggleStatus = (value: TaskStatus) => {
-    if (status.includes(value)) {
-      onChangeStatus(status.filter((s) => s !== value));
+    if (statuses.includes(value)) {
+      onChangeStatus(statuses.filter((s) => s !== value));
     } else {
-      onChangeStatus([...status, value]);
+      onChangeStatus([...statuses, value]);
     }
   };
 
@@ -80,7 +80,7 @@ const TaskFilterBar = ({
           {(['TODO', 'IN_PROGRESS', 'DONE'] as TaskStatus[]).map((s) => (
             <FormControlLabel
               key={s}
-              control={<Checkbox checked={status.includes(s)} onChange={() => toggleStatus(s)} />}
+              control={<Checkbox checked={statuses.includes(s)} onChange={() => toggleStatus(s)} />}
               label={s}
             />
           ))}

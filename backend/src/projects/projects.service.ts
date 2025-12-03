@@ -19,7 +19,7 @@ export class ProjectsService {
         { description: { contains: params.keyword, mode: 'insensitive' } },
       ];
     }
-    return this.prisma.project.findMany({ where });
+    return this.prisma.project.findMany({ where, orderBy: { id: 'asc' } });
   }
 
   async findOne(id: number) {
@@ -35,7 +35,7 @@ export class ProjectsService {
       data: {
         name: dto.name,
         description: dto.description,
-        status: dto.status,
+        status: dto.status || ProjectStatus.ACTIVE,
         startDate: dto.startDate ? new Date(dto.startDate) : undefined,
         endDate: dto.endDate ? new Date(dto.endDate) : undefined,
       },

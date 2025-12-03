@@ -27,18 +27,20 @@ interface Props {
   initialData?: Task;
 }
 
+const defaultForm: TaskFormInput = {
+  title: '',
+  description: '',
+  status: 'TODO',
+  priority: 'MEDIUM',
+  startDate: null,
+  endDate: null,
+  progress: 0,
+  assigneeIds: [],
+};
+
 const TaskFormDialog = ({ open, onClose, onSubmit, initialData }: Props) => {
   const [assigneeOptions, setAssigneeOptions] = useState<{ id: number; name: string }[]>([]);
-  const [form, setForm] = useState<TaskFormInput>({
-    title: '',
-    description: '',
-    status: 'TODO',
-    priority: 'MEDIUM',
-    startDate: null,
-    endDate: null,
-    progress: 0,
-    assigneeIds: [],
-  });
+  const [form, setForm] = useState<TaskFormInput>(defaultForm);
 
   useEffect(() => {
     api.get<{ id: number; name: string }[]>('/users').then((res) => setAssigneeOptions(res.data));
@@ -57,7 +59,7 @@ const TaskFormDialog = ({ open, onClose, onSubmit, initialData }: Props) => {
         assigneeIds: initialData.assignees.map((a) => a.id),
       });
     } else {
-      setForm((prev) => ({ ...prev, title: '', description: '', assigneeIds: [], progress: 0, status: 'TODO', priority: 'MEDIUM', startDate: null, endDate: null }));
+      setForm(defaultForm);
     }
   }, [initialData, open]);
 
@@ -78,6 +80,7 @@ const TaskFormDialog = ({ open, onClose, onSubmit, initialData }: Props) => {
             <TextField
               label="제목"
               fullWidth
+              required
               value={form.title}
               onChange={(e) => handleChange('title', e.target.value)}
               margin="dense"
@@ -183,7 +186,7 @@ const TaskFormDialog = ({ open, onClose, onSubmit, initialData }: Props) => {
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>취소</Button>
-        <Button onClick={handleSubmit} variant="contained">
+        <Button onClick={handleSubmit} variant="contained" disabled={!form.title.trim()}>
           저장
         </Button>
       </DialogActions>

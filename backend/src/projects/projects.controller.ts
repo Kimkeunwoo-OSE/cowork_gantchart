@@ -1,17 +1,8 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-  Put,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
-import { ProjectStatus } from '@prisma/client';
+import { ProjectStatus, TaskStatus } from '@prisma/client';
 import { TasksService } from '../tasks/tasks.service';
 
 @Controller('projects')
@@ -47,7 +38,18 @@ export class ProjectsController {
   }
 
   @Get(':projectId/gantt')
-  async gantt(@Param('projectId') projectId: string) {
-    return this.tasksService.getGanttData(Number(projectId));
+  async gantt(
+    @Param('projectId') projectId: string,
+    @Query('status') status?: TaskStatus,
+    @Query('assigneeId') assigneeId?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.tasksService.getGanttData(Number(projectId), {
+      status,
+      assigneeId: assigneeId ? Number(assigneeId) : undefined,
+      from,
+      to,
+    });
   }
 }
