@@ -7,16 +7,13 @@ import {
   Post,
   Put,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectStatus } from '@prisma/client';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { TasksService } from '../tasks/tasks.service';
 
-@UseGuards(JwtAuthGuard)
 @Controller('projects')
 export class ProjectsController {
   constructor(

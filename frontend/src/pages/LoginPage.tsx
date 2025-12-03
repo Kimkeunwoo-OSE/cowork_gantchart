@@ -1,58 +1,22 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Button, Paper, TextField, Typography, Alert, Stack } from '@mui/material';
-import { authApi } from '../api/authApi';
+import { Box, Button, Paper, Typography, Stack } from '@mui/material';
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
-  const handleSubmit = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      const { data } = await authApi.login({ email, password });
-      localStorage.setItem('accessToken', data.accessToken);
-      navigate('/projects');
-    } catch (err) {
-      setError('로그인에 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
       <Paper sx={{ p: 4, width: 400 }}>
         <Typography variant="h5" mb={2} align="center">
-          로그인
+          로그인 없이 바로 이용
         </Typography>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <TextField
-          label="이메일"
-          fullWidth
-          margin="normal"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <TextField
-          label="비밀번호"
-          type="password"
-          fullWidth
-          margin="normal"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
         <Stack direction="column" spacing={1.5} sx={{ mt: 2 }}>
-          <Button variant="contained" fullWidth onClick={handleSubmit} disabled={loading}>
-            로그인
+          <Button variant="contained" fullWidth onClick={() => navigate('/projects')}>
+            프로젝트 바로가기
           </Button>
-          <Button variant="outlined" fullWidth onClick={() => navigate('/signup')} disabled={loading}>
-            아직 계정이 없으신가요? 회원가입
-          </Button>
+          <Typography variant="body2" color="text.secondary" align="center">
+            내부용 환경으로 별도 로그인 없이 바로 사용할 수 있습니다.
+          </Typography>
         </Stack>
       </Paper>
     </Box>
