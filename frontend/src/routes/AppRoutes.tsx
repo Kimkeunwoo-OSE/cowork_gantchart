@@ -25,7 +25,7 @@ const AppRoutes = () => (
         </ProtectedRoute>
       }
     />
-    <Route path="*" element={<Navigate to="/projects" replace />} />
+    <Route path="*" element={<Navigate to="/login" replace />} />
   </Routes>
 );
 

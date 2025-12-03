@@ -4,18 +4,14 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  const email = 'admin@example.com';
-  const existing = await prisma.user.findUnique({ where: { email } });
+  const email = 'admin@admin.com';
+  const password = 'admin';
+  const passwordHash = await bcrypt.hash(password, 10);
 
-  if (existing) {
-    console.log('Admin user already exists, skipping seed.');
-    return;
-  }
-
-  const passwordHash = await bcrypt.hash('123456', 10);
-
-  await prisma.user.create({
-    data: {
+  await prisma.user.upsert({
+    where: { email },
+    update: { passwordHash, role: Role.ADMIN, name: 'Admin' },
+    create: {
       name: 'Admin',
       email,
       passwordHash,
@@ -23,7 +19,7 @@ async function main() {
     },
   });
 
-  console.log('Admin user seeded (admin@example.com / 123456).');
+  console.log('Seed completed: admin user ensured (admin@admin.com / admin).');
 }
 
 main()

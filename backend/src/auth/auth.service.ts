@@ -1,14 +1,10 @@
-import {
-  BadRequestException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { User } from '@prisma/client';
 import { UsersService } from '../users/users.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
-import { User } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -17,21 +13,28 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async signup(data: SignupDto): Promise<User> {
-    const existing = await this.usersService.findByEmail(data.email);
+  private sanitizeUser(user: User) {
+    const { passwordHash, ...rest } = user;
+    return rest;
+  }
+
+  async signup(data: SignupDto): Promise<Omit<User, 'passwordHash'>> {
+    const normalizedEmail = data.email.toLowerCase();
+    const existing = await this.usersService.findByEmail(normalizedEmail);
     if (existing) {
       throw new BadRequestException('Email already registered');
     }
     const passwordHash = await bcrypt.hash(data.password, 10);
-    return this.usersService.create({
+    const created = await this.usersService.create({
       name: data.name,
-      email: data.email,
+      email: normalizedEmail,
       passwordHash,
     });
+    return this.sanitizeUser(created);
   }
 
   async validateUser(email: string, password: string): Promise<User> {
-    const user = await this.usersService.findByEmail(email);
+    const user = await this.usersService.findByEmail(email.toLowerCase());
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }

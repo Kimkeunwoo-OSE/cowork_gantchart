@@ -1,21 +1,26 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Button, Paper, TextField, Typography, Alert, Stack, Link } from '@mui/material';
+import { Box, Button, Paper, TextField, Typography, Alert, Stack } from '@mui/material';
 import { authApi } from '../api/authApi';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async () => {
+    setError('');
+    setLoading(true);
     try {
       const { data } = await authApi.login({ email, password });
       localStorage.setItem('accessToken', data.accessToken);
       navigate('/projects');
     } catch (err) {
       setError('로그인에 실패했습니다.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -41,13 +46,13 @@ const LoginPage = () => {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <Stack direction="column" spacing={1} sx={{ mt: 2 }}>
-          <Button variant="contained" fullWidth onClick={handleSubmit}>
+        <Stack direction="column" spacing={1.5} sx={{ mt: 2 }}>
+          <Button variant="contained" fullWidth onClick={handleSubmit} disabled={loading}>
             로그인
           </Button>
-          <Link component="button" variant="body2" onClick={() => navigate('/signup')} sx={{ alignSelf: 'center' }}>
+          <Button variant="outlined" fullWidth onClick={() => navigate('/signup')} disabled={loading}>
             아직 계정이 없으신가요? 회원가입
-          </Link>
+          </Button>
         </Stack>
       </Paper>
     </Box>
