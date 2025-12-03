@@ -1,0 +1,80 @@
+// Prisma schema for cowork gantt chart backend
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum ProjectStatus {
+  ACTIVE
+  COMPLETED
+  ON_HOLD
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  name          String
+  email         String         @unique
+  passwordHash  String
+  role          Role           @default(MEMBER)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  tasksAssigned TaskAssignee[]
+}
+
+model Project {
+  id          Int          @id @default(autoincrement())
+  name        String
+  description String?
+  status      ProjectStatus @default(ACTIVE)
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  tasks       Task[]
+}
+
+model Task {
+  id          Int          @id @default(autoincrement())
+  projectId   Int
+  title       String
+  description String?
+  status      TaskStatus    @default(TODO)
+  priority    TaskPriority  @default(MEDIUM)
+  startDate   DateTime?
+  endDate     DateTime?
+  progress    Int
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  project     Project      @relation(fields: [projectId], references: [id])
+  assignees   TaskAssignee[]
+}
+
+model TaskAssignee {
+  id     Int  @id @default(autoincrement())
+  taskId Int
+  userId Int
+  task   Task @relation(fields: [taskId], references: [id])
+  user   User @relation(fields: [userId], references: [id])
+}
