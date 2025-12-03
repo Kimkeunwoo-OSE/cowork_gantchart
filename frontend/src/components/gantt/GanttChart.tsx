@@ -24,15 +24,20 @@ const GanttChart = ({ tasks, onChangeDates, updatingTaskId, isUpdating }: Props)
   const [selected, setSelected] = useState<GanttTaskItem | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const ganttTasks: GanttTask[] = tasks.map((t) => ({
-    id: `${t.id}`,
-    name: t.name,
-    start: t.start ? new Date(t.start) : new Date(),
-    end: t.end ? new Date(t.end) : new Date(),
-    progress: t.progress,
-    isDisabled: false,
-    type: 'task',
-  }));
+  const ganttTasks: GanttTask[] = tasks.map((t) => {
+    const start = t.start ? new Date(t.start) : new Date();
+    const end = t.end ? new Date(t.end) : new Date(start.getTime() + 24 * 60 * 60 * 1000);
+
+    return {
+      id: `${t.id}`,
+      name: t.name,
+      start,
+      end,
+      progress: t.progress,
+      isDisabled: false,
+      type: 'task',
+    } as GanttTask;
+  });
 
   const handleDateChange = async (task: GanttTask) => {
     if (!onChangeDates) return task;
