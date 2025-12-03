@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  HttpException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { User } from '@prisma/client';
@@ -18,19 +24,37 @@ export class AuthService {
     return rest;
   }
 
-  async signup(data: SignupDto): Promise<Omit<User, 'passwordHash'>> {
-    const normalizedEmail = data.email.toLowerCase();
-    const existing = await this.usersService.findByEmail(normalizedEmail);
-    if (existing) {
-      throw new BadRequestException('Email already registered');
+  async signup(data: SignupDto): Promise<{ accessToken: string; user: Omit<User, 'passwordHash'> }> {
+    const normalizedEmail = data.email.trim().toLowerCase();
+    try {
+      const existing = await this.usersService.findByEmail(normalizedEmail);
+      if (existing) {
+        throw new ConflictException('Email already registered');
+      }
+
+      const passwordHash = await bcrypt.hash(data.password, 10);
+      const created = await this.usersService.create({
+        name: data.name.trim(),
+        email: normalizedEmail,
+        passwordHash,
+      });
+
+      const payload = { sub: created.id, email: created.email, role: created.role };
+      console.log('Signup success for', normalizedEmail);
+      return {
+        accessToken: this.jwtService.sign(payload),
+        user: this.sanitizeUser(created),
+      };
+    } catch (error) {
+      console.error('Signup failed:', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      if ((error as any)?.code === 'P2002') {
+        throw new ConflictException('Email already registered');
+      }
+      throw new BadRequestException('Signup failed');
     }
-    const passwordHash = await bcrypt.hash(data.password, 10);
-    const created = await this.usersService.create({
-      name: data.name,
-      email: normalizedEmail,
-      passwordHash,
-    });
-    return this.sanitizeUser(created);
   }
 
   async validateUser(email: string, password: string): Promise<User> {
@@ -50,6 +74,7 @@ export class AuthService {
     const payload = { sub: user.id, email: user.email, role: user.role };
     return {
       accessToken: this.jwtService.sign(payload),
+      user: this.sanitizeUser(user),
     };
   }
 

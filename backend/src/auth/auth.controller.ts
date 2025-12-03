@@ -10,8 +10,13 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('signup')
-  signup(@Body() dto: SignupDto) {
-    return this.authService.signup(dto);
+  async signup(@Body() dto: SignupDto) {
+    try {
+      return await this.authService.signup(dto);
+    } catch (error) {
+      console.error('Signup controller error:', error);
+      throw error;
+    }
   }
 
   @Post('login')

@@ -11,6 +11,7 @@ import {
   Link,
   Divider,
 } from '@mui/material';
+import { AxiosError } from 'axios';
 import { authApi } from '../api/authApi';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -33,11 +34,31 @@ const SignUpPage = () => {
     setError('');
     setLoading(true);
     try {
-      await authApi.signup({ name: name.trim(), email: email.trim(), password });
-      alert('회원가입이 완료되었습니다. 로그인 해주세요.');
-      navigate('/login');
+      const { data, status } = await authApi.signup({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+      });
+      if (status >= 200 && status < 300) {
+        if ((data as any)?.accessToken) {
+          localStorage.setItem('accessToken', (data as any).accessToken);
+          navigate('/projects');
+        } else {
+          alert('회원가입이 완료되었습니다. 로그인 해주세요.');
+          navigate('/login');
+        }
+      } else {
+        setError('회원가입에 실패했습니다. 입력 정보를 확인해주세요.');
+      }
     } catch (e) {
-      setError('회원가입에 실패했습니다. 입력 정보를 확인해주세요.');
+      const axiosError = e as AxiosError<{ message?: string | string[] }>; 
+      const message = axiosError.response?.data?.message;
+      const displayMessage = Array.isArray(message)
+        ? message.join(', ')
+        : typeof message === 'string'
+        ? message
+        : '회원가입에 실패했습니다. 입력 정보를 확인해주세요.';
+      setError(displayMessage);
     } finally {
       setLoading(false);
     }
